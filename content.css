@@ -1,0 +1,43 @@
+/* Shadow DOM 内でのみ読み込まれる。ページ側の要素には適用されない。 */
+
+:host {
+  all: initial;
+  display: inline-flex;
+  align-self: center;
+  margin: 0 8px;
+}
+
+.banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 2px solid #b45309;
+  border-radius: 6px;
+  background: #fef3c7;
+  color: #1f2937;
+  font: 600 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  white-space: nowrap;
+}
+
+.hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+}
+
+input {
+  width: 14em;
+  padding: 2px 6px;
+  border: 1px solid #92400e;
+  border-radius: 4px;
+  background: #fff;
+  color: #1f2937;
+  font: 400 13px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+input:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 1px;
+}
