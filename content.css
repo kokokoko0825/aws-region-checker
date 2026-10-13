@@ -2,42 +2,53 @@
 
 :host {
   all: initial;
-  display: inline-flex;
-  align-self: center;
-  margin: 0 8px;
+  display: block;
 }
 
 .banner {
-  display: inline-flex;
+  display: flex;
+  /* content.js がホストに設定する max-width に収まらないときは、案内文と入力欄を折り返す。 */
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
-  border: 2px solid #b45309;
+  /* 折り返したときの行間は 8px、横の要素間は 12px。 */
+  gap: 8px 12px;
+  /* ツールバーに合わせるとき、content.js がホストに min-height を設定し、上下の余白を 0 にする。
+     余った高さは align-items の中央ぞろえで上下に分かれる。 */
+  box-sizing: border-box;
+  min-height: inherit;
+  padding: var(--banner-padding-block, 8px) 12px;
   border-radius: 6px;
-  background: #fef3c7;
-  color: #1f2937;
-  font: 600 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* コンソールのエラー通知に合わせた赤地に白文字。 */
+  background: #d91515;
+  color: #ffffff;
+  /* ページの見出しを基本にした文字サイズ。値は content.js がホストに設定する。高さは固定しない。 */
+  font: 600 var(--banner-font-size, 20px) / 1.3 system-ui, -apple-system, "Segoe UI", sans-serif;
   white-space: nowrap;
 }
 
 .hint {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 8px 12px;
   font-weight: 400;
 }
 
 input {
-  width: 14em;
-  padding: 2px 6px;
-  border: 1px solid #92400e;
+  /* リージョンコード(最長 14 文字程度)が収まる幅。余白と枠は幅の外に足す。
+     上下の余白・枠・行高を変えるときは content.js の INPUT_EXTRA_HEIGHT / LINE_HEIGHT も直す。 */
+  width: 16ch;
+  padding: 4px 8px;
+  border: 1px solid #0f141a;
   border-radius: 4px;
-  background: #fff;
-  color: #1f2937;
-  font: 400 13px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: #ffffff;
+  color: #0f141a;
+  /* 1em = バナーの文字サイズ。 */
+  font: 400 1em / 1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
+/* 赤地の上で見えるよう、赤を 1px 挟んだ外側に白い輪郭を出す。 */
 input:focus-visible {
-  outline: 2px solid #1d4ed8;
+  outline: 2px solid #ffffff;
   outline-offset: 1px;
 }
