@@ -1,8 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "Region Checker for AWS Console",
+  "name": "__MSG_name__",
   "version": "0.1.0",
-  "description": "Unofficial. Shows the current region in the AWS Management Console and keeps the banner until you type the region code.",
+  "description": "__MSG_description__",
+  "default_locale": "en",
+  "minimum_chrome_version": "121",
+  "icons": {
+    "16": "icons/16.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
   "permissions": ["storage"],
   "background": {
     "scripts": ["background.js"],

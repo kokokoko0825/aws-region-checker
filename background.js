@@ -5,11 +5,19 @@
 // Chrome では service worker、Firefox ではイベントページとして読み込まれる。
 
 // content.js の REGION_RE / GLOBAL と同じ値。ビルド工程がなく共有できないため、変更時は両方直す。
-const REGION_RE = /^[a-z]{2}(-[a-z]+)+-\d+$/;
+const REGION_RE =
+  /^[a-z]{2,4}(-[a-z]{1,8})?-(north|south|east|west|central|northeast|northwest|southeast|southwest)-\d{1,2}$/;
 const GLOBAL = "Global";
+// "ホスト名のリージョン/region クエリのリージョン" の 2 件までを保存できる長さ。
+const MAX_LENGTH = 64;
 
-const isRegion = (value) =>
-  typeof value === "string" && (value === GLOBAL || REGION_RE.test(value));
+// リージョン 1 件、または食い違い時の "a/b" 形式だけを受け付ける。
+const isRegion = (value) => {
+  if (typeof value !== "string" || value.length > MAX_LENGTH) return false;
+  if (value === GLOBAL) return true;
+  const parts = value.split("/");
+  return parts.length <= 2 && parts.every((part) => REGION_RE.test(part));
+};
 const keyOf = (tabId) => `tab:${tabId}`;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

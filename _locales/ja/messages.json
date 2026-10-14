@@ -1,0 +1,17 @@
+{
+  "name": {
+    "message": "Region Checker for AWS Console"
+  },
+  "description": {
+    "message": "非公式。AWS マネジメントコンソールに現在のリージョンを表示し、リージョンコードを入力するまでバナーを消しません。"
+  },
+  "currentRegion": {
+    "message": "現在のリージョン: $REGION$",
+    "placeholders": {
+      "region": { "content": "$1" }
+    }
+  },
+  "hint": {
+    "message": "消すにはリージョンを入力"
+  }
+}

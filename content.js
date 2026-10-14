@@ -7,7 +7,13 @@
   // ナビバー直下の帯(ハンバーガーメニューと情報アイコンが載る行)。バナーの上端と高さを合わせる。
   // クラス名の末尾はビルドごとに変わるハッシュなので、前方部分で一致させる。
   const TOOLBAR = '[class*="awsui_toolbar-container"]';
-  const REGION_RE = /^[a-z]{2}(-[a-z]+)+-\d+$/;
+  // 実在するリージョンの形(us-east-1, us-gov-west-1, eusc-de-east-1 など)に限る。
+  // background.js の REGION_RE と同じ値。変更時は両方直す。
+  const REGION_RE =
+    /^[a-z]{2,4}(-[a-z]{1,8})?-(north|south|east|west|central|northeast|northwest|southeast|southwest)-\d{1,2}$/;
+  // リージョンが入るのは console.aws.amazon.com の直前のラベルだけ。
+  // それより左のラベル(マルチセッションの接頭辞など)はリンクの作成者が自由に決められるので見ない。
+  const HOST_RE = /(?:^|\.)([a-z0-9-]+)\.console\.aws\.amazon\.com$/;
   const GLOBAL = "Global";
   // コンソールのパス先頭セグメント。ホスト名が us-east-1 でもリージョンを持たないサービス。
   const GLOBAL_SERVICES = new Set([
@@ -30,6 +36,8 @@
   const BUTTON_GAP = 4;
   // ボタンが右端に寄っていても画面外に出さないための right の下限。
   const MIN_RIGHT = 8;
+  // ボタンが左に寄っていてこの幅(px)を取れないときは、FALLBACK_RIGHT に出す。
+  const MIN_WIDTH = 200;
   // バナーの文字サイズをページの見出しに合わせる。先に見つかったタグを使う。
   const HEADING_TAGS = ["h2", "h3"];
   // 見出しがないときの文字サイズ(px)。Cloudscape の h2 相当。
@@ -45,12 +53,21 @@
   // content.css が var() で参照する。
   const FONT_SIZE_PROPERTY = "--banner-font-size";
   const PADDING_BLOCK_PROPERTY = "--banner-padding-block";
-  // CSS が読み込めなくても同じ位置に出るよう、位置だけは要素に直接指定する。
+  // CSS が読み込めなくても同じ位置に出るよう、位置は要素に直接指定する。
+  // ページ側の CSS で隠されないよう、見え方に関わる値も毎回書き戻す。
   const HOST_STYLE = {
     position: "fixed",
     "z-index": "2147483647",
-    margin: "0",
+    margin: "0px",
+    visibility: "visible",
+    opacity: "1",
+    transform: "none",
+    "clip-path": "none",
   };
+  // 色は content.css の読み込みに頼らない(読み込めなくても警告として読めるように)。
+  // バナーはコンソールのエラー通知に合わせた赤地に白文字。
+  const BANNER_STYLE = { background: "#d91515", color: "#ffffff" };
+  const INPUT_STYLE = { background: "#ffffff", color: "#0f141a" };
 
   let host = null;
   let label = null;
@@ -64,6 +81,15 @@
 
   const findRegion = (parts) => parts.find((part) => REGION_RE.test(part)) ?? null;
 
+  // 表示文言。拡張コンテキストが無効なときは英語で出す。
+  function message(name, fallback, substitution) {
+    try {
+      return chrome.i18n.getMessage(name, substitution) || fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
   function getRegion() {
     if (GLOBAL_SERVICES.has(location.pathname.split("/")[1])) return GLOBAL;
 
@@ -71,11 +97,14 @@
       document.querySelector(REGION_BUTTON)?.textContent.trim().toLowerCase() ?? "";
     if (GLOBAL_LABELS.has(buttonText)) return GLOBAL;
 
-    return (
-      findRegion(location.hostname.split(".")) ??
-      findRegion([new URLSearchParams(location.search).get("region") ?? ""]) ??
-      findRegion(buttonText.split(/[^a-z0-9-]+/))
-    );
+    // region クエリはリンクの作成者が決められるので、ホスト名とボタン文言を先に見る。
+    const shown =
+      findRegion([HOST_RE.exec(location.hostname)?.[1] ?? ""]) ??
+      findRegion(buttonText.split(/[^a-z0-9-]+/));
+    const query = findRegion([new URLSearchParams(location.search).get("region") ?? ""]);
+    // 食い違うときは両方を並べる。どちらか片方だけを確認済みでもバナーが出る。
+    if (shown && query && shown !== query) return `${shown}/${query}`;
+    return shown ?? query;
   }
 
   function setConfirmed(region) {
@@ -123,7 +152,13 @@
     newInput.type = "text";
     newInput.autocomplete = "off";
     newInput.spellcheck = false;
-    hint.append("消すにはリージョンを入力", newInput);
+    hint.append(message("hint", "Type the region to dismiss"), newInput);
+    for (const [name, value] of Object.entries(BANNER_STYLE)) {
+      banner.style.setProperty(name, value);
+    }
+    for (const [name, value] of Object.entries(INPUT_STYLE)) {
+      newInput.style.setProperty(name, value);
+    }
 
     newInput.addEventListener("input", () => {
       if (newInput.value.trim().toLowerCase() !== shownRegion.toLowerCase()) return;
@@ -175,10 +210,15 @@
   }
 
   // 値が変わらないときは style を書き換えない。value が null なら指定を外す。
+  // ページ側の !important 付きの規則に負けないよう、常に important で書く。
   function setStyle(name, value) {
-    if (host.style.getPropertyValue(name) === (value ?? "")) return;
-    if (value === null) host.style.removeProperty(name);
-    else host.style.setProperty(name, value);
+    const current = host.style.getPropertyValue(name);
+    if (value === null) {
+      if (current) host.style.removeProperty(name);
+      return;
+    }
+    if (current === value && host.style.getPropertyPriority(name) === "important") return;
+    host.style.setProperty(name, value, "important");
   }
 
   // 見出しのサイズを基本に、1 行の高さがツールバーを超えるなら収まる大きさまで下げる。
@@ -207,21 +247,25 @@
       right = Math.max(MIN_RIGHT, document.documentElement.clientWidth - rect.right);
     }
     if (toolbar) top = toolbar.top;
+    // ナビやツールバーが画面外にあっても、バナーは画面内に残す。
+    top = Math.max(0, Math.round(top));
+    right = Math.round(right);
+    const width = document.documentElement.clientWidth;
+    if (width - right - MIN_RIGHT < MIN_WIDTH) right = FALLBACK_RIGHT;
 
     for (const [name, value] of Object.entries(HOST_STYLE)) {
       setStyle(name, value);
     }
     setStyle(FONT_SIZE_PROPERTY, `${fontSize(toolbar)}px`);
-    setStyle("top", `${Math.round(top)}px`);
-    setStyle("right", `${Math.round(right)}px`);
+    setStyle("top", `${top}px`);
+    setStyle("right", `${right}px`);
     // ツールバーと同じ高さにし、上下の余白は中央ぞろえで吸収する。折り返したときは伸びる。
     setStyle("min-height", toolbar ? `${Math.round(toolbar.height)}px` : null);
     setStyle(PADDING_BLOCK_PROPERTY, toolbar ? "0px" : null);
     // 左にはみ出さないよう、左側にも MIN_RIGHT を残した幅を上限にする。
-    const maxWidth = document.documentElement.clientWidth - Math.round(right) - MIN_RIGHT;
-    setStyle("max-width", `${Math.max(0, maxWidth)}px`);
+    setStyle("max-width", `${Math.max(0, width - right - MIN_RIGHT)}px`);
     // リージョンメニューはこの位置に開くので、開いている間は隠す。
-    setStyle("display", button?.getAttribute("aria-expanded") === "true" ? "none" : null);
+    setStyle("display", button?.getAttribute("aria-expanded") === "true" ? "none" : "block");
   }
 
   function update() {
@@ -235,7 +279,7 @@
     if (!host) createBanner();
     if (region !== shownRegion) {
       shownRegion = region;
-      label.textContent = `現在のリージョン: ${region}`;
+      label.textContent = message("currentRegion", `Current region: ${region}`, region);
       input.value = "";
     }
     place();
@@ -259,9 +303,12 @@
   addEventListener("resize", scheduleUpdate);
   addEventListener("popstate", scheduleUpdate);
   addEventListener("hashchange", scheduleUpdate);
-  // bfcache から復元されたページは confirmed が古いので取り直す。
+  // bfcache から復元されたページは confirmed が古いので、捨ててから取り直す。
   addEventListener("pageshow", (event) => {
-    if (event.persisted) restore();
+    if (!event.persisted) return;
+    confirmed = null;
+    update();
+    restore();
   });
   restore();
 })();

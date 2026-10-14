@@ -18,9 +18,7 @@
   min-height: inherit;
   padding: var(--banner-padding-block, 8px) 12px;
   border-radius: 6px;
-  /* コンソールのエラー通知に合わせた赤地に白文字。 */
-  background: #d91515;
-  color: #ffffff;
+  /* 背景色と文字色は content.js が要素に直接指定する(この CSS が読み込めなくても出るように)。 */
   /* ページの見出しを基本にした文字サイズ。値は content.js がホストに設定する。高さは固定しない。 */
   font: 600 var(--banner-font-size, 20px) / 1.3 system-ui, -apple-system, "Segoe UI", sans-serif;
   white-space: nowrap;
@@ -41,8 +39,6 @@ input {
   padding: 4px 8px;
   border: 1px solid #0f141a;
   border-radius: 4px;
-  background: #ffffff;
-  color: #0f141a;
   /* 1em = バナーの文字サイズ。 */
   font: 400 1em / 1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }

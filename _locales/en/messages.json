@@ -1,0 +1,17 @@
+{
+  "name": {
+    "message": "Region Checker for AWS Console"
+  },
+  "description": {
+    "message": "Unofficial. Shows the current region in the AWS Management Console and keeps the banner until you type the region code."
+  },
+  "currentRegion": {
+    "message": "Current region: $REGION$",
+    "placeholders": {
+      "region": { "content": "$1" }
+    }
+  },
+  "hint": {
+    "message": "Type the region to dismiss"
+  }
+}
